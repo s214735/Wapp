@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#17382e">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Wapp">
+  <meta name="description" content="Your personal stretch routine and timer.">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png">
+  <link rel="stylesheet" href="./styles.css">
+  <title>Wapp · Daily stretch</title>
+</head>
+<body>
+  <main id="overview" class="app-shell">
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark">w</span><span>Wapp</span></div>
+      <span class="private-tag"><span class="private-dot"></span> Just for you</span>
+    </header>
+
+    <section class="hero" aria-labelledby="routine-title">
+      <div class="hero-orb orb-one"></div><div class="hero-orb orb-two"></div>
+      <div class="eyebrow">YOUR ROUTINE <span class="eyebrow-line"></span> 01</div>
+      <h1 id="routine-title">Daily stretch<span class="period">.</span></h1>
+      <p>Take a moment to reset. Your sequence is ready when you are.</p>
+      <div class="hero-bottom">
+        <div class="hero-stat"><strong id="total-duration">—</strong><span>total time</span></div>
+        <div class="hero-stat"><strong id="move-count">—</strong><span>stretches</span></div>
+        <button id="start-button" class="start-button" type="button">Start routine <span aria-hidden="true">↗</span></button>
+      </div>
+    </section>
+
+    <section class="section-head" aria-label="Routine overview">
+      <div><span class="section-kicker">THE FLOW</span><h2>Stretches</h2></div>
+      <button id="add-button" class="subtle-button" type="button"><span aria-hidden="true">＋</span> Add</button>
+    </section>
+    <ol id="exercise-list" class="exercise-list"></ol>
+
+    <section class="settings-card" aria-labelledby="settings-title">
+      <div class="settings-head"><span class="settings-icon" aria-hidden="true">◷</span><div><span class="section-kicker">MAKE IT YOURS</span><h2 id="settings-title">Between moments</h2></div></div>
+      <p>These pauses are added automatically when you start.</p>
+      <div class="setting-row"><label for="side-switch">Switching sides</label><div class="number-field"><input id="side-switch" type="number" min="0" max="300" inputmode="numeric"><span>sec</span></div></div>
+      <div class="setting-row"><label for="between-exercises">Between stretches</label><div class="number-field"><input id="between-exercises" type="number" min="0" max="300" inputmode="numeric"><span>sec</span></div></div>
+      <div class="setting-row"><label for="between-sets">Between sets</label><div class="number-field"><input id="between-sets" type="number" min="0" max="600" inputmode="numeric"><span>sec</span></div></div>
+    </section>
+
+    <section class="data-actions" aria-label="Routine data">
+      <button id="export-button" type="button">Export JSON <span aria-hidden="true">↗</span></button>
+      <button id="import-button" type="button">Import JSON <span aria-hidden="true">↗</span></button>
+      <input id="import-file" type="file" accept="application/json,.json" hidden>
+    </section>
+    <p class="footer-note">Your edits are saved on this phone. Export a JSON backup if you want to keep a copy.</p>
+  </main>
+
+  <main id="session" class="session-screen" hidden>
+    <div class="session-top"><button id="end-button" class="session-exit" type="button">← End</button><span class="session-label">WAPP / IN SESSION</span><span id="session-progress">1 / 1</span></div>
+    <div class="session-main">
+      <div id="phase-label" class="phase-label">STRETCH</div>
+      <h1 id="step-name">Asian squat hold</h1>
+      <p id="step-detail" class="step-detail">Set 1 of 2</p>
+      <div id="timer-ring" class="timer-ring"><div class="timer-inner"><span id="remaining-time">0:45</span><span>REMAINING</span></div></div>
+      <p id="pause-note" class="pause-note" role="status">Keep this screen open for audible transitions.</p>
+    </div>
+    <div class="session-bottom">
+      <div class="up-next"><span>UP NEXT</span><strong id="up-next-name">Set break</strong></div>
+      <div class="session-controls"><button id="previous-button" type="button" aria-label="Previous step">↶</button><button id="pause-button" type="button">Pause</button><button id="next-button" type="button" aria-label="Next step">↷</button></div>
+    </div>
+  </main>
+
+  <dialog id="exercise-dialog" class="edit-dialog">
+    <form id="exercise-form" method="dialog">
+      <div class="dialog-head"><div><span class="section-kicker">YOUR ROUTINE</span><h2 id="dialog-title">Edit stretch</h2></div><button id="close-dialog" class="close-button" type="button" aria-label="Close">×</button></div>
+      <label class="form-label" for="exercise-name">Name<input id="exercise-name" name="name" required maxlength="80" autocomplete="off"></label>
+      <div class="form-grid"><label class="form-label" for="exercise-seconds">Seconds per hold<input id="exercise-seconds" name="seconds" type="number" required min="1" max="3600" inputmode="numeric"></label><label class="form-label" for="exercise-sets">Sets<input id="exercise-sets" name="sets" type="number" required min="1" max="20" inputmode="numeric"></label></div>
+      <label class="form-label" for="exercise-sides">Sides<select id="exercise-sides" name="sides"><option value="none">One hold</option><option value="both">Left and right</option></select></label>
+      <div class="dialog-actions"><button id="delete-button" class="delete-button" type="button">Delete</button><button class="save-button" type="submit">Save stretch</button></div>
+    </form>
+  </dialog>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

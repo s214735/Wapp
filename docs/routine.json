@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "name": "Daily stretch",
+  "settings": {
+    "sideSwitchSeconds": 5,
+    "betweenExercisesSeconds": 10,
+    "betweenSetsSeconds": 20
+  },
+  "exercises": [
+    { "id": "asian-squat", "name": "Asian squat hold", "seconds": 45, "sets": 2, "sides": "none" },
+    { "id": "toe-touch", "name": "Standing forward toe touch", "seconds": 60, "sets": 1, "sides": "none" },
+    { "id": "pec-low", "name": "Pec stretch · low", "seconds": 30, "sets": 1, "sides": "both" },
+    { "id": "pec-high", "name": "Pec stretch · high", "seconds": 30, "sets": 1, "sides": "both" },
+    { "id": "straddle", "name": "Split / straddle", "seconds": 120, "sets": 1, "sides": "none" },
+    { "id": "seated-twist", "name": "Seated spinal twist", "seconds": 60, "sets": 1, "sides": "both" },
+    { "id": "supine-quad", "name": "Supine quad stretch", "seconds": 60, "sets": 1, "sides": "both" },
+    { "id": "childs-pose-lat", "name": "Child’s pose · side lat stretch", "seconds": 45, "sets": 1, "sides": "both" },
+    { "id": "supine-twist", "name": "Supine spinal twist", "seconds": 60, "sets": 1, "sides": "both" }
+  ]
+}

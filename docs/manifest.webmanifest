@@ -1,0 +1,11 @@
+{
+  "name": "Wapp",
+  "short_name": "Wapp",
+  "description": "A personal stretch routine and timer",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f5f3ed",
+  "theme_color": "#17382e",
+  "icons": [{ "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}
