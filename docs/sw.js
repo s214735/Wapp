@@ -1,9 +1,10 @@
-const CACHE_NAME = "wapp-v1";
+const CACHE_NAME = "wapp-v2";
 const APP_FILES = [
   "./",
   "./index.html",
   "./app.js",
   "./core.mjs",
+  "./nico.mjs",
   "./styles.css",
   "./routine.json",
   "./manifest.webmanifest",

@@ -3,82 +3,46 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#17382e">
+  <meta name="theme-color" content="#f5f3ed">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Wapp">
-  <meta name="description" content="Your personal stretch routine and timer.">
+  <meta name="description" content="A personal stretch timer and NicoCounter.">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="./apple-touch-icon.png">
   <link rel="stylesheet" href="./styles.css">
-  <title>Wapp · Daily stretch</title>
+  <title>Wapp</title>
 </head>
 <body>
-  <main id="overview" class="app-shell">
-    <header class="topbar">
-      <div class="brand"><span class="brand-mark">w</span><span>Wapp</span></div>
-      <span class="private-tag"><span class="private-dot"></span> Just for you</span>
-    </header>
-
-    <section class="hero" aria-labelledby="routine-title">
-      <div class="hero-orb orb-one"></div><div class="hero-orb orb-two"></div>
-      <div class="eyebrow">YOUR ROUTINE <span class="eyebrow-line"></span> 01</div>
-      <h1 id="routine-title">Daily stretch<span class="period">.</span></h1>
-      <p>Take a moment to reset. Your sequence is ready when you are.</p>
-      <div class="hero-bottom">
-        <div class="hero-stat"><strong id="total-duration">—</strong><span>total time</span></div>
-        <div class="hero-stat"><strong id="move-count">—</strong><span>stretches</span></div>
-        <button id="start-button" class="start-button" type="button">Start routine <span aria-hidden="true">↗</span></button>
-      </div>
-    </section>
-
-    <section class="section-head" aria-label="Routine overview">
-      <div><span class="section-kicker">THE FLOW</span><h2>Stretches</h2></div>
-      <button id="add-button" class="subtle-button" type="button"><span aria-hidden="true">＋</span> Add</button>
-    </section>
-    <ol id="exercise-list" class="exercise-list"></ol>
-
-    <section class="settings-card" aria-labelledby="settings-title">
-      <div class="settings-head"><span class="settings-icon" aria-hidden="true">◷</span><div><span class="section-kicker">MAKE IT YOURS</span><h2 id="settings-title">Between moments</h2></div></div>
-      <p>These pauses are added automatically when you start.</p>
-      <div class="setting-row"><label for="side-switch">Switching sides</label><div class="number-field"><input id="side-switch" type="number" min="0" max="300" inputmode="numeric"><span>sec</span></div></div>
-      <div class="setting-row"><label for="between-exercises">Between stretches</label><div class="number-field"><input id="between-exercises" type="number" min="0" max="300" inputmode="numeric"><span>sec</span></div></div>
-      <div class="setting-row"><label for="between-sets">Between sets</label><div class="number-field"><input id="between-sets" type="number" min="0" max="600" inputmode="numeric"><span>sec</span></div></div>
-    </section>
-
-    <section class="data-actions" aria-label="Routine data">
-      <button id="export-button" type="button">Export JSON <span aria-hidden="true">↗</span></button>
-      <button id="import-button" type="button">Import JSON <span aria-hidden="true">↗</span></button>
-      <input id="import-file" type="file" accept="application/json,.json" hidden>
-    </section>
-    <p class="footer-note">Your edits are saved on this phone. Export a JSON backup if you want to keep a copy.</p>
+  <main id="stretch-view" class="app-view page-wrap">
+    <header class="page-header"><p class="eyebrow">YOUR ROUTINE</p><h1 id="routine-title">Daily stretch</h1><p class="page-intro">A little time to reset, whenever you need it.</p></header>
+    <section class="stretch-card" aria-label="Stretch summary"><div class="stretch-art" aria-hidden="true"><span></span><span></span><span></span></div><p class="card-kicker">READY WHEN YOU ARE</p><div class="stretch-stats"><div><strong id="total-duration">—</strong><span>total time, breaks included</span></div><div><strong id="move-count">—</strong><span>stretches</span></div></div><button id="start-button" class="primary-button stretch-start" type="button">Start stretching <span aria-hidden="true">↗</span></button></section>
+    <p class="view-hint">Change stretches and break lengths in Settings.</p>
   </main>
 
-  <main id="session" class="session-screen" hidden>
-    <div class="session-top"><button id="end-button" class="session-exit" type="button">← End</button><span class="session-label">WAPP / IN SESSION</span><span id="session-progress">1 / 1</span></div>
-    <div class="session-main">
-      <div id="phase-label" class="phase-label">STRETCH</div>
-      <h1 id="step-name">Asian squat hold</h1>
-      <p id="step-detail" class="step-detail">Set 1 of 2</p>
-      <div id="timer-ring" class="timer-ring"><div class="timer-inner"><span id="remaining-time">0:45</span><span>REMAINING</span></div></div>
-      <p id="pause-note" class="pause-note" role="status">Keep this screen open for audible transitions.</p>
-    </div>
-    <div class="session-bottom">
-      <div class="up-next"><span>UP NEXT</span><strong id="up-next-name">Set break</strong></div>
-      <div class="session-controls"><button id="previous-button" type="button" aria-label="Previous step">↶</button><button id="pause-button" type="button">Pause</button><button id="next-button" type="button" aria-label="Next step">↷</button></div>
-    </div>
+  <main id="nico-view" class="app-view page-wrap" hidden>
+    <header class="page-header"><p class="eyebrow">YOUR PROGRESS</p><h1>NicoCounter</h1><p class="page-intro" id="nico-since">Set a start date in Settings to begin.</p></header>
+    <section class="nico-card" aria-label="NicoCounter totals"><div class="nico-primary"><span>Saved so far</span><strong id="nico-saved">—</strong></div><div class="nico-stats"><div><strong id="nico-days">—</strong><span>days since start</span></div><div><strong id="nico-packets">—</strong><span>estimated packets avoided</span></div></div><p id="nico-breakdown" class="nico-breakdown">Enter your estimate to see savings.</p></section>
+    <div id="nico-setup-hint" class="setup-hint"><p>Start with a date, packet price, and your estimated usage.</p><button id="open-nico-settings" type="button">Set up NicoCounter</button></div>
+    <section class="content-card oops-card" aria-labelledby="oops-title"><div class="section-head"><div><p class="section-kicker">KEEP IT HONEST</p><h2 id="oops-title">Register an oops</h2></div></div><p class="supporting-text">Each entry subtracts its packet count from the estimated savings.</p><form id="oops-form" class="oops-form"><div class="field-grid"><label class="form-label" for="oops-date">Date<input id="oops-date" type="date" required></label><label class="form-label" for="oops-packets">Packets<input id="oops-packets" type="number" min="0.01" max="1000" step="0.01" inputmode="decimal" required value="1"></label></div><label class="form-label" for="oops-note">Note (optional)<input id="oops-note" maxlength="100" placeholder="What happened?"></label><button class="primary-button" type="submit">Add oops</button></form></section>
+    <section class="history-section" aria-labelledby="oops-history-title"><div class="section-head"><div><p class="section-kicker">THE RECORD</p><h2 id="oops-history-title">Oops history</h2></div></div><ul id="nico-oops-list" class="history-list"></ul></section>
   </main>
 
-  <dialog id="exercise-dialog" class="edit-dialog">
-    <form id="exercise-form" method="dialog">
-      <div class="dialog-head"><div><span class="section-kicker">YOUR ROUTINE</span><h2 id="dialog-title">Edit stretch</h2></div><button id="close-dialog" class="close-button" type="button" aria-label="Close">×</button></div>
-      <label class="form-label" for="exercise-name">Name<input id="exercise-name" name="name" required maxlength="80" autocomplete="off"></label>
-      <div class="form-grid"><label class="form-label" for="exercise-seconds">Seconds per hold<input id="exercise-seconds" name="seconds" type="number" required min="1" max="3600" inputmode="numeric"></label><label class="form-label" for="exercise-sets">Sets<input id="exercise-sets" name="sets" type="number" required min="1" max="20" inputmode="numeric"></label></div>
-      <label class="form-label" for="exercise-sides">Sides<select id="exercise-sides" name="sides"><option value="none">One hold</option><option value="both">Left and right</option></select></label>
-      <div class="dialog-actions"><button id="delete-button" class="delete-button" type="button">Delete</button><button class="save-button" type="submit">Save stretch</button></div>
-    </form>
-  </dialog>
+  <main id="settings-view" class="app-view page-wrap" hidden>
+    <div id="settings-home"><header class="page-header"><p class="eyebrow">MAKE IT YOURS</p><h1>Settings</h1><p class="page-intro">Choose what you want to configure.</p></header><div class="settings-app-list"><button id="settings-open-stretch" class="settings-app-button" type="button"><span class="settings-app-icon" aria-hidden="true">◷</span><span><strong>Stretch</strong><small>Routine, timings, and breaks</small></span><span class="settings-app-arrow" aria-hidden="true">›</span></button><button id="settings-open-nico" class="settings-app-button" type="button"><span class="settings-app-icon" aria-hidden="true">◎</span><span><strong>NicoCounter</strong><small>Estimate and oops entries</small></span><span class="settings-app-arrow" aria-hidden="true">›</span></button><button id="settings-open-backup" class="settings-app-button" type="button"><span class="settings-app-icon" aria-hidden="true">↗</span><span><strong>Backup</strong><small>Import, export, and share data</small></span><span class="settings-app-arrow" aria-hidden="true">›</span></button></div></div>
+    <button id="settings-back" class="settings-back" type="button" hidden>‹ Settings</button>
+    <section id="stretch-settings" class="settings-section" aria-labelledby="stretch-settings-title" hidden><div class="section-head"><div><p class="section-kicker">STRETCH</p><h2 id="stretch-settings-title">Routine</h2></div><button id="add-button" class="subtle-button" type="button">＋ Add stretch</button></div><div class="content-card routine-card"><label class="form-label" for="routine-name">Routine name<input id="routine-name" maxlength="80"></label><ol id="exercise-list" class="exercise-list"></ol></div><div class="content-card breaks-card"><h3>Breaks</h3><p class="supporting-text">These pauses are included in the total time.</p><div class="setting-row"><label for="side-switch">Switching sides</label><div class="number-field"><input id="side-switch" type="number" min="0" max="300" inputmode="numeric"><span>sec</span></div></div><div class="setting-row"><label for="between-exercises">Between stretches</label><div class="number-field"><input id="between-exercises" type="number" min="0" max="300" inputmode="numeric"><span>sec</span></div></div><div class="setting-row"><label for="between-sets">Between sets</label><div class="number-field"><input id="between-sets" type="number" min="0" max="600" inputmode="numeric"><span>sec</span></div></div></div></section>
+    <section id="nico-settings" class="settings-section" aria-labelledby="nico-settings-title" hidden><div class="section-head"><div><p class="section-kicker">NICOCOUNTER</p><h2 id="nico-settings-title">Estimate</h2></div></div><div class="content-card"><form id="nico-settings-form"><label class="form-label" for="nico-start-date">Start date<input id="nico-start-date" type="date" required></label><div class="field-grid"><label class="form-label" for="nico-price">Price per packet<input id="nico-price" type="number" min="0" max="1000000" step="0.01" inputmode="decimal" required></label><label class="form-label" for="nico-currency">Currency label<input id="nico-currency" maxlength="8" placeholder="kr" required></label></div><div class="estimate-row"><label class="form-label" for="nico-rate">Estimated packets<input id="nico-rate" type="number" min="0.01" max="1000" step="0.01" inputmode="decimal" required></label><span>every</span><label class="form-label" for="nico-period">Days<input id="nico-period" type="number" min="1" max="3650" step="1" inputmode="numeric" required></label></div><p class="supporting-text">Example: 1 packet every 7 days. Savings accrue each day.</p><button class="primary-button" type="submit">Save estimate</button></form></div><div class="content-card settings-oops"><h3>Oops entries</h3><p class="supporting-text">Edit or remove past entries here.</p><ul id="settings-oops-list" class="history-list"></ul></div></section>
+    <section id="backup-settings" class="settings-section" aria-labelledby="backup-title" hidden><div class="section-head"><div><p class="section-kicker">YOUR DATA</p><h2 id="backup-title">Backup</h2></div></div><div class="content-card backup-card"><p>Data stays in the browser on each device. A computer backup includes only that computer’s data; it cannot read your phone’s entries.</p><div class="backup-actions"><button id="export-button" class="subtle-button" type="button">Export JSON on this computer</button><button id="import-button" class="subtle-button" type="button">Import JSON</button></div><button id="share-button" class="subtle-button" type="button">Share this device’s backup</button><input id="import-file" type="file" accept="application/json,.json" hidden><p class="supporting-text">To move phone data to your computer, use Share backup on your phone, then import that file on your computer. Importing a backup replaces the data on this device.</p></div></section>
+  </main>
+
+  <nav id="bottom-nav" class="bottom-nav" aria-label="Main navigation"><div class="nav-inner"><button type="button" class="nav-button active" data-view="stretch" aria-current="page"><span class="nav-icon" aria-hidden="true">◷</span><span>Stretch</span></button><button type="button" class="nav-button" data-view="nico"><span class="nav-icon" aria-hidden="true">◎</span><span>NicoCounter</span></button><button type="button" class="nav-button" data-view="settings"><span class="nav-icon" aria-hidden="true">⚙</span><span>Settings</span></button></div></nav>
+
+  <main id="session" class="session-screen" hidden><div class="session-top"><span class="session-label">STRETCH SESSION</span><span id="session-progress">1 / 1</span></div><div class="session-main"><div id="phase-label" class="phase-label">STRETCH</div><h1 id="step-name">Asian squat hold</h1><p id="step-detail" class="step-detail">Set 1 of 2</p><div id="timer-ring" class="timer-ring"><div class="timer-inner"><span id="remaining-time">0:45</span><span>REMAINING</span></div></div><p id="pause-note" class="pause-note" role="status">Keep this screen open for audible transitions.</p></div><div class="session-bottom"><div class="up-next"><span>UP NEXT</span><strong id="up-next-name">Set break</strong></div><div class="session-controls"><button id="previous-button" type="button" aria-label="Go back">↶<small>Back</small></button><button id="pause-button" type="button">Pause</button><button id="next-button" type="button" aria-label="Skip step">↷<small>Skip</small></button><button id="end-button" type="button" aria-label="Stop session">×<small>Stop</small></button></div></div></main>
+
+  <dialog id="exercise-dialog" class="edit-dialog"><form id="exercise-form" method="dialog"><div class="dialog-head"><div><span class="section-kicker">YOUR ROUTINE</span><h2 id="dialog-title">Edit stretch</h2></div><button id="close-dialog" class="close-button" type="button" aria-label="Close">×</button></div><label class="form-label" for="exercise-name">Name<input id="exercise-name" required maxlength="80" autocomplete="off"></label><div class="field-grid"><label class="form-label" for="exercise-seconds">Seconds per hold<input id="exercise-seconds" type="number" required min="1" max="3600" inputmode="numeric"></label><label class="form-label" for="exercise-sets">Sets<input id="exercise-sets" type="number" required min="1" max="20" inputmode="numeric"></label></div><label class="form-label" for="exercise-sides">Sides<select id="exercise-sides"><option value="none">One hold</option><option value="both">Left and right</option></select></label><div class="dialog-actions"><button id="delete-button" class="delete-button" type="button">Delete</button><button class="save-button" type="submit">Save stretch</button></div></form></dialog>
+  <dialog id="oops-dialog" class="edit-dialog"><form id="oops-edit-form" method="dialog"><div class="dialog-head"><div><span class="section-kicker">NICOCOUNTER</span><h2>Edit oops</h2></div><button id="close-oops-dialog" class="close-button" type="button" aria-label="Close">×</button></div><label class="form-label" for="edit-oops-date">Date<input id="edit-oops-date" type="date" required></label><label class="form-label" for="edit-oops-packets">Packets<input id="edit-oops-packets" type="number" min="0.01" max="1000" step="0.01" inputmode="decimal" required></label><label class="form-label" for="edit-oops-note">Note<input id="edit-oops-note" maxlength="100"></label><div class="dialog-actions"><button id="delete-oops-button" class="delete-button" type="button">Delete</button><button class="save-button" type="submit">Save oops</button></div></form></dialog>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script type="module" src="./app.js"></script>
 </body>
