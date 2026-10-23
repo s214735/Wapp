@@ -4,7 +4,7 @@ A personal, phone-first stretch routine and timer. The app is a static website h
 
 ## Use on iPhone
 
-Open the GitHub Pages URL in Safari, then choose **Share → Add to Home Screen**. Wapp caches its app files for offline use after the first successful load. Keep the screen open for audible timer transitions; the timer pauses when Wapp is hidden or the phone is locked.
+Open [Wapp](https://s214735.github.io/Wapp/) in Safari, then choose **Share → Add to Home Screen**. Wapp caches its app files for offline use after the first successful load. Keep the screen open for audible timer transitions; the timer pauses when Wapp is hidden or the phone is locked.
 
 ## Data
 
