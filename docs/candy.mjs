@@ -1,8 +1,8 @@
-export const DEFAULT_NICO = {
-  version: 1,
+export const DEFAULT_CANDY = {
+  version: 2,
   startDate: "",
-  packetPrice: 0,
-  packetsPerPeriod: 1,
+  servingPrice: 0,
+  servingsPerPeriod: 1,
   periodDays: 7,
   currency: "kr",
   oops: []
@@ -27,8 +27,8 @@ function boundedNumber(value, min, max, label) {
   return number;
 }
 
-export function normalizeNico(input) {
-  if (!input || typeof input !== "object") throw new Error("This is not NicoCounter data.");
+export function normalizeCandy(input) {
+  if (!input || typeof input !== "object") throw new Error("This is not CandyCounter data.");
   const startDate = String(input.startDate || "");
   if (startDate && dayNumber(startDate) === null) throw new Error("Enter a valid start date.");
   const oops = Array.isArray(input.oops) ? input.oops.map((entry, index) => {
@@ -36,33 +36,33 @@ export function normalizeNico(input) {
     return {
       id: String(entry.id || `oops-${index + 1}`),
       date: entry.date,
-      packets: boundedNumber(entry.packets, 0.01, 1000, `Oops ${index + 1} packets`),
+      servings: boundedNumber(entry.servings ?? entry.packets, 0.01, 1000, `Oops ${index + 1} servings`),
       note: String(entry.note || "").trim().slice(0, 100)
     };
   }) : [];
   const periodDays = boundedNumber(input.periodDays ?? 7, 1, 3650, "Days per period");
   if (!Number.isInteger(periodDays)) throw new Error("Days per period must be a whole number.");
   return {
-    version: 1,
+    version: 2,
     startDate,
-    packetPrice: boundedNumber(input.packetPrice ?? 0, 0, 1000000, "Price per packet"),
-    packetsPerPeriod: boundedNumber(input.packetsPerPeriod ?? 1, 0.01, 1000, "Packets per period"),
+    servingPrice: boundedNumber(input.servingPrice ?? input.packetPrice ?? 0, 0, 1000000, "Price per serving"),
+    servingsPerPeriod: boundedNumber(input.servingsPerPeriod ?? input.packetsPerPeriod ?? 1, 0.01, 1000, "Servings per period"),
     periodDays,
     currency: String(input.currency || "kr").trim().slice(0, 8) || "kr",
     oops
   };
 }
 
-export function calculateNico(input, asOf = todayISO()) {
-  const nico = normalizeNico(input);
+export function calculateCandy(input, asOf = todayISO()) {
+  const candy = normalizeCandy(input);
   const today = dayNumber(asOf);
   if (today === null) throw new Error("Invalid calculation date.");
-  const start = dayNumber(nico.startDate);
-  if (start === null) return { configured: false, days: 0, grossPackets: 0, oopsPackets: 0, netPackets: 0, saved: 0 };
+  const start = dayNumber(candy.startDate);
+  if (start === null) return { configured: false, days: 0, grossServings: 0, oopsServings: 0, netServings: 0, saved: 0 };
   const days = Math.max(0, today - start);
-  const grossPackets = days / nico.periodDays * nico.packetsPerPeriod;
-  const oopsPackets = nico.oops.filter((entry) => dayNumber(entry.date) >= start && dayNumber(entry.date) <= today).reduce((sum, entry) => sum + entry.packets, 0);
-  const netPackets = grossPackets - oopsPackets;
-  const saved = Math.round(netPackets * nico.packetPrice * 100) / 100;
-  return { configured: true, days, grossPackets, oopsPackets, netPackets, saved };
+  const grossServings = days / candy.periodDays * candy.servingsPerPeriod;
+  const oopsServings = candy.oops.filter((entry) => dayNumber(entry.date) >= start && dayNumber(entry.date) <= today).reduce((sum, entry) => sum + entry.servings, 0);
+  const netServings = grossServings - oopsServings;
+  const saved = Math.round(netServings * candy.servingPrice * 100) / 100;
+  return { configured: true, days, grossServings, oopsServings, netServings, saved };
 }

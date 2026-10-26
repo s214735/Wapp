@@ -1,17 +1,20 @@
 import { buildTimeline, formatTime, normalizeRoutine, totalSeconds } from "./core.mjs";
-import { DEFAULT_NICO, calculateNico, dayNumber, normalizeNico, todayISO } from "./nico.mjs";
+import { DEFAULT_CANDY, calculateCandy, dayNumber, normalizeCandy, todayISO } from "./candy.mjs";
 
 const ROUTINE_KEY = "wapp.routine.v1";
-const NICO_KEY = "wapp.nico.v1";
+const CANDY_KEY = "wapp.candy.v2";
+const LEGACY_NICO_KEY = "wapp.nico.v1";
 const $ = (id) => document.getElementById(id);
 let routine;
-let nico;
+let candy;
 let editingIndex = null;
 let editingOopsId = null;
 let session = null;
 let timer = null;
 let toastTimer = null;
 let audioContext = null;
+let wakeLock = null;
+let wakeLockPending = false;
 let activeView = "stretch";
 
 function notify(message) {
@@ -25,13 +28,13 @@ function notify(message) {
 function showView(view) {
   if (session) return;
   activeView = view;
-  for (const name of ["stretch", "nico", "settings"]) $(name + "-view").hidden = name !== view;
+  for (const name of ["stretch", "candy", "settings"]) $(name + "-view").hidden = name !== view;
   for (const button of document.querySelectorAll(".nav-button")) {
     const selected = button.dataset.view === view;
     button.classList.toggle("active", selected);
     if (selected) button.setAttribute("aria-current", "page"); else button.removeAttribute("aria-current");
   }
-  if (view === "nico") renderNico();
+  if (view === "candy") renderCandy();
   if (view === "settings") showSettingsPage("home");
   window.scrollTo(0, 0);
 }
@@ -39,7 +42,7 @@ function showView(view) {
 function showSettingsPage(page) {
   $("settings-home").hidden = page !== "home";
   $("settings-back").hidden = page === "home";
-  for (const name of ["stretch", "nico", "backup"]) $(name + "-settings").hidden = name !== page;
+  for (const name of ["stretch", "candy", "backup"]) $(name + "-settings").hidden = name !== page;
   window.scrollTo(0, 0);
 }
 
@@ -54,10 +57,10 @@ function saveRoutine() {
   renderStretchSettings();
 }
 
-function saveNico() {
-  localStorage.setItem(NICO_KEY, JSON.stringify(nico));
-  renderNico();
-  renderNicoSettings();
+function saveCandy() {
+  localStorage.setItem(CANDY_KEY, JSON.stringify(candy));
+  renderCandy();
+  renderCandySettings();
 }
 
 function describe(exercise) {
@@ -134,15 +137,15 @@ function openEditor(index = null) {
 }
 
 function formatMoney(value) {
-  return `${new Intl.NumberFormat(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value)} ${nico.currency}`;
+  return `${new Intl.NumberFormat(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value)} ${candy.currency}`;
 }
 
 function formatCount(value) {
   return new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(value);
 }
 
-function packetWord(value) {
-  return value > 1 ? "packets" : "packet";
+function servingWord(value) {
+  return value > 1 ? "servings" : "serving";
 }
 
 function formatDate(value) {
@@ -153,14 +156,14 @@ function formatDate(value) {
 function renderOopsList(id, editable) {
   const list = $(id);
   list.replaceChildren();
-  if (!nico.oops.length) {
+  if (!candy.oops.length) {
     const empty = document.createElement("li");
     empty.className = "empty-list";
     empty.textContent = "No oops entries yet.";
     list.append(empty);
     return;
   }
-  const sorted = [...nico.oops].sort((a, b) => b.date.localeCompare(a.date));
+  const sorted = [...candy.oops].sort((a, b) => b.date.localeCompare(a.date));
   for (const entry of sorted) {
     const row = document.createElement("li");
     const details = document.createElement("div");
@@ -171,7 +174,7 @@ function renderOopsList(id, editable) {
     details.append(title, date);
     const amount = document.createElement("span");
     amount.className = "history-amount";
-    amount.textContent = `−${formatCount(entry.packets)} ${packetWord(entry.packets)}`;
+    amount.textContent = `−${formatCount(entry.servings)} ${servingWord(entry.servings)}`;
     row.append(details, amount);
     if (editable) {
       const edit = document.createElement("button");
@@ -185,42 +188,42 @@ function renderOopsList(id, editable) {
   }
 }
 
-function renderNico() {
-  const result = calculateNico(nico);
+function renderCandy() {
+  const result = calculateCandy(candy);
   const today = todayISO();
-  $("nico-setup-hint").hidden = result.configured;
-  $("nico-saved").textContent = result.configured ? formatMoney(result.saved) : "—";
-  $("nico-days").textContent = result.configured ? formatCount(result.days) : "—";
-  $("nico-packets").textContent = result.configured ? formatCount(result.netPackets) : "—";
-  $("nico-since").textContent = result.configured ? `Since ${formatDate(nico.startDate)}` : "Set a start date in Settings to begin.";
-  $("nico-breakdown").textContent = result.configured
-    ? `${formatCount(result.grossPackets)} estimated ${packetWord(result.grossPackets)} × ${formatMoney(nico.packetPrice)} − ${formatCount(result.oopsPackets)} oops ${packetWord(result.oopsPackets)} × ${formatMoney(nico.packetPrice)}`
+  $("candy-setup-hint").hidden = result.configured;
+  $("candy-saved").textContent = result.configured ? formatMoney(result.saved) : "—";
+  $("candy-days").textContent = result.configured ? formatCount(result.days) : "—";
+  $("candy-servings").textContent = result.configured ? formatCount(result.netServings) : "—";
+  $("candy-since").textContent = result.configured ? `Less sugar since ${formatDate(candy.startDate)}` : "Set a start date in Settings to begin.";
+  $("candy-breakdown").textContent = result.configured
+    ? `${formatCount(result.grossServings)} estimated sugary ${servingWord(result.grossServings)} × ${formatMoney(candy.servingPrice)} − ${formatCount(result.oopsServings)} logged ${servingWord(result.oopsServings)} × ${formatMoney(candy.servingPrice)}`
     : "Enter your estimate to see savings.";
   $("oops-date").max = today;
-  $("oops-date").min = nico.startDate || "";
+  $("oops-date").min = candy.startDate || "";
   if (!$("oops-date").value || $("oops-date").value > today) $("oops-date").value = today;
   for (const field of $("oops-form").querySelectorAll("input,button")) field.disabled = !result.configured;
-  renderOopsList("nico-oops-list", false);
+  renderOopsList("candy-oops-list", false);
 }
 
-function renderNicoSettings() {
-  $("nico-start-date").value = nico.startDate;
-  $("nico-start-date").max = todayISO();
-  $("nico-price").value = nico.packetPrice;
-  $("nico-rate").value = nico.packetsPerPeriod;
-  $("nico-period").value = nico.periodDays;
-  $("nico-currency").value = nico.currency;
+function renderCandySettings() {
+  $("candy-start-date").value = candy.startDate;
+  $("candy-start-date").max = todayISO();
+  $("candy-price").value = candy.servingPrice;
+  $("candy-rate").value = candy.servingsPerPeriod;
+  $("candy-period").value = candy.periodDays;
+  $("candy-currency").value = candy.currency;
   renderOopsList("settings-oops-list", true);
 }
 
 function openOopsEditor(id) {
-  const entry = nico.oops.find((item) => item.id === id);
+  const entry = candy.oops.find((item) => item.id === id);
   if (!entry) return;
   editingOopsId = id;
   $("edit-oops-date").value = entry.date;
-  $("edit-oops-date").min = nico.startDate;
+  $("edit-oops-date").min = candy.startDate;
   $("edit-oops-date").max = todayISO();
-  $("edit-oops-packets").value = entry.packets;
+  $("edit-oops-servings").value = entry.servings;
   $("edit-oops-note").value = entry.note;
   $("oops-dialog").showModal();
 }
@@ -243,6 +246,33 @@ function playChime() {
   } catch { /* Audio is optional. */ }
 }
 
+async function keepScreenAwake() {
+  if (!navigator.wakeLock || !session?.running || document.hidden || wakeLock || wakeLockPending) return;
+  wakeLockPending = true;
+  try {
+    const lock = await navigator.wakeLock.request("screen");
+    if (!session?.running || document.hidden) {
+      await lock.release();
+      return;
+    }
+    wakeLock = lock;
+    lock.addEventListener("release", () => {
+      if (wakeLock === lock) wakeLock = null;
+      if (session?.running) renderSession();
+    });
+  } catch { /* The device may refuse a wake lock, for example on low battery. */ }
+  finally {
+    wakeLockPending = false;
+    if (session?.running) renderSession();
+  }
+}
+
+function releaseWakeLock() {
+  const lock = wakeLock;
+  wakeLock = null;
+  lock?.release().catch(() => {});
+}
+
 function startSession() {
   session = { steps: buildTimeline(routine), index: 0, remaining: 0, deadline: 0, running: false };
   for (const view of document.querySelectorAll(".app-view")) view.hidden = true;
@@ -256,6 +286,7 @@ function startSession() {
 function endSession() {
   clearInterval(timer);
   timer = null;
+  releaseWakeLock();
   session = null;
   $("session").hidden = true;
   $("bottom-nav").hidden = false;
@@ -267,6 +298,7 @@ function selectStep(index, autoplay = true) {
   if (index >= session.steps.length) {
     clearInterval(timer);
     timer = null;
+    releaseWakeLock();
     session.index = session.steps.length;
     session.running = false;
     $("phase-label").textContent = "COMPLETE";
@@ -298,6 +330,7 @@ function resumeSession() {
   clearInterval(timer);
   timer = setInterval(tick, 100);
   renderSession();
+  keepScreenAwake();
 }
 
 function pauseSession(reason = "Paused") {
@@ -306,6 +339,7 @@ function pauseSession(reason = "Paused") {
   session.running = false;
   clearInterval(timer);
   timer = null;
+  releaseWakeLock();
   renderSession(reason);
 }
 
@@ -329,11 +363,11 @@ function renderSession(reason = "") {
   $("up-next-name").textContent = session.steps[session.index + 1]?.name || "Finish routine";
   $("session-progress").textContent = `${session.index + 1} / ${session.steps.length}`;
   $("pause-button").textContent = session.running ? "Pause" : "Resume";
-  $("pause-note").textContent = reason || (session.running ? "Keep this screen open for audible transitions." : "Timer paused");
+  $("pause-note").textContent = reason || (session.running ? (wakeLock ? "Screen stays awake while the timer runs." : "Keep this screen open; your device may dim it.") : "Timer paused");
 }
 
 function makeBackup() {
-  return { version: 2, exportedAt: new Date().toISOString(), routine, nico };
+  return { version: 3, exportedAt: new Date().toISOString(), routine, candy };
 }
 
 function downloadBackup() {
@@ -367,12 +401,12 @@ async function shareBackup() {
 async function importBackup(file) {
   const input = JSON.parse(await file.text());
   const nextRoutine = normalizeRoutine(input?.routine || input);
-  const nextNico = input?.routine ? normalizeNico(input.nico || DEFAULT_NICO) : nico;
+  const nextCandy = input?.routine ? normalizeCandy(input.candy || input.nico || DEFAULT_CANDY) : candy;
   if (!window.confirm("Replace this device's Wapp data with the selected backup?")) return;
   routine = nextRoutine;
-  nico = nextNico;
+  candy = nextCandy;
   saveRoutine();
-  saveNico();
+  saveCandy();
   notify("Backup imported");
 }
 
@@ -395,22 +429,26 @@ async function load() {
     routine = normalizeRoutine(await (await fetch("./routine.json")).json());
     notify("Saved routine was invalid; starter routine restored.");
   }
-  try { nico = normalizeNico(JSON.parse(localStorage.getItem(NICO_KEY)) || DEFAULT_NICO); }
+  try {
+    const savedCandy = localStorage.getItem(CANDY_KEY);
+    candy = normalizeCandy(JSON.parse(savedCandy || localStorage.getItem(LEGACY_NICO_KEY)) || DEFAULT_CANDY);
+    if (!savedCandy && localStorage.getItem(LEGACY_NICO_KEY)) localStorage.setItem(CANDY_KEY, JSON.stringify(candy));
+  }
   catch {
-    localStorage.removeItem(NICO_KEY);
-    nico = normalizeNico(DEFAULT_NICO);
-    notify("Saved NicoCounter data was invalid; defaults restored.");
+    localStorage.removeItem(CANDY_KEY);
+    candy = normalizeCandy(DEFAULT_CANDY);
+    notify("Saved CandyCounter data was invalid; defaults restored.");
   }
   renderStretch();
   renderStretchSettings();
-  renderNico();
-  renderNicoSettings();
+  renderCandy();
+  renderCandySettings();
 }
 
 for (const button of document.querySelectorAll(".nav-button")) button.addEventListener("click", () => showView(button.dataset.view));
-for (const name of ["stretch", "nico", "backup"]) $("settings-open-" + name).addEventListener("click", () => openSettingsPage(name));
+for (const name of ["stretch", "candy", "backup"]) $("settings-open-" + name).addEventListener("click", () => openSettingsPage(name));
 $("settings-back").addEventListener("click", () => showSettingsPage("home"));
-$("open-nico-settings").addEventListener("click", () => openSettingsPage("nico"));
+$("open-candy-settings").addEventListener("click", () => openSettingsPage("candy"));
 $("start-button").addEventListener("click", startSession);
 $("end-button").addEventListener("click", endSession);
 $("pause-button").addEventListener("click", () => {
@@ -419,8 +457,8 @@ $("pause-button").addEventListener("click", () => {
 });
 $("next-button").addEventListener("click", () => { if (session.index < session.steps.length) selectStep(session.index + 1, session.running); });
 $("previous-button").addEventListener("click", () => { if (session.index > 0) selectStep(session.index - 1, session.running); });
-document.addEventListener("visibilitychange", () => { if (document.hidden) pauseSession("Paused while Wapp was away"); else if (nico) renderNico(); });
-window.addEventListener("pageshow", () => { if (nico) renderNico(); });
+document.addEventListener("visibilitychange", () => { if (document.hidden) pauseSession("Paused while Wapp was away"); else if (candy) renderCandy(); });
+window.addEventListener("pageshow", () => { if (candy) renderCandy(); });
 
 $("add-button").addEventListener("click", () => openEditor());
 $("close-dialog").addEventListener("click", () => $("exercise-dialog").close());
@@ -446,24 +484,24 @@ for (const [id, key] of [["side-switch", "sideSwitchSeconds"], ["between-exercis
   $(id).addEventListener("change", (event) => { routine = normalizeRoutine({ ...routine, settings: { ...routine.settings, [key]: event.target.value } }); saveRoutine(); });
 }
 
-$("nico-settings-form").addEventListener("submit", (event) => {
+$("candy-settings-form").addEventListener("submit", (event) => {
   event.preventDefault();
   if (!event.currentTarget.reportValidity()) return;
   try {
-    nico = normalizeNico({ ...nico, startDate: $("nico-start-date").value, packetPrice: $("nico-price").value, packetsPerPeriod: $("nico-rate").value, periodDays: $("nico-period").value, currency: $("nico-currency").value });
-    saveNico();
-    notify("NicoCounter estimate saved");
+    candy = normalizeCandy({ ...candy, startDate: $("candy-start-date").value, servingPrice: $("candy-price").value, servingsPerPeriod: $("candy-rate").value, periodDays: $("candy-period").value, currency: $("candy-currency").value });
+    saveCandy();
+    notify("CandyCounter estimate saved");
   } catch (error) { notify(error.message); }
 });
 $("oops-form").addEventListener("submit", (event) => {
   event.preventDefault();
   if (!event.currentTarget.reportValidity()) return;
   const date = $("oops-date").value;
-  if (dayNumber(date) < dayNumber(nico.startDate) || dayNumber(date) > dayNumber(todayISO())) return notify("Oops date must be within your count.");
+  if (dayNumber(date) < dayNumber(candy.startDate) || dayNumber(date) > dayNumber(todayISO())) return notify("Oops date must be within your count.");
   try {
-    nico = normalizeNico({ ...nico, oops: [...nico.oops, { id: crypto.randomUUID(), date, packets: $("oops-packets").value, note: $("oops-note").value }] });
-    saveNico();
-    $("oops-packets").value = 1;
+    candy = normalizeCandy({ ...candy, oops: [...candy.oops, { id: crypto.randomUUID(), date, servings: $("oops-servings").value, note: $("oops-note").value }] });
+    saveCandy();
+    $("oops-servings").value = 1;
     $("oops-note").value = "";
     $("oops-date").value = todayISO();
     notify("Oops registered");
@@ -474,18 +512,18 @@ $("oops-edit-form").addEventListener("submit", (event) => {
   event.preventDefault();
   if (!event.currentTarget.reportValidity()) return;
   const date = $("edit-oops-date").value;
-  if (dayNumber(date) < dayNumber(nico.startDate) || dayNumber(date) > dayNumber(todayISO())) return notify("Oops date must be within your count.");
+  if (dayNumber(date) < dayNumber(candy.startDate) || dayNumber(date) > dayNumber(todayISO())) return notify("Oops date must be within your count.");
   try {
-    nico = normalizeNico({ ...nico, oops: nico.oops.map((entry) => entry.id === editingOopsId ? { ...entry, date, packets: $("edit-oops-packets").value, note: $("edit-oops-note").value } : entry) });
-    saveNico();
+    candy = normalizeCandy({ ...candy, oops: candy.oops.map((entry) => entry.id === editingOopsId ? { ...entry, date, servings: $("edit-oops-servings").value, note: $("edit-oops-note").value } : entry) });
+    saveCandy();
     $("oops-dialog").close();
     notify("Oops updated");
   } catch (error) { notify(error.message); }
 });
 $("delete-oops-button").addEventListener("click", () => {
   if (!window.confirm("Delete this oops entry?")) return;
-  nico.oops = nico.oops.filter((entry) => entry.id !== editingOopsId);
-  saveNico();
+  candy.oops = candy.oops.filter((entry) => entry.id !== editingOopsId);
+  saveCandy();
   $("oops-dialog").close();
   notify("Oops removed");
 });
