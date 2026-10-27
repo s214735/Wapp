@@ -51,7 +51,18 @@ async function run(engine, width) {
     const errors=[];page.on('pageerror',e=>errors.push(e.message));
     await page.clock.setFixedTime(new Date('2026-10-27T12:00:00+01:00'));
     await page.addInitScript(data=>{if(!localStorage.getItem('test-seeded')){localStorage.setItem('wapp.candy.v2',JSON.stringify(data));localStorage.setItem('test-seeded','yes');}},legacy);
+    let releaseRoutine, markRequested;
+    const requested = new Promise(resolve => { markRequested = resolve; });
+    await page.route('**/routine.json', async route => {
+      markRequested();
+      await new Promise(resolve => { releaseRoutine = resolve; });
+      await route.continue();
+    }, {times:1});
     await page.goto(`http://127.0.0.1:${server.address().port}`);
+    await requested;
+    assert.equal(await page.locator('[data-view=counter]').isDisabled(),true);
+    assert.equal(await page.locator('#start-button').isDisabled(),true);
+    releaseRoutine();
     await page.waitForFunction(()=>document.querySelector('#move-count').textContent!=='—');
     await page.locator('[data-view=counter]').click();
     assert.match(await page.locator('#counter-saved').textContent(),/907,20 DKK/);
@@ -97,7 +108,7 @@ async function run(engine, width) {
     await page.locator('[data-view=stretch]').click();await page.locator('#start-button').click();assert.equal(await page.locator('#session').isVisible(),true);await page.locator('#pause-button').click();assert.equal(await page.locator('#pause-button').textContent(),'Resume');await page.locator('#end-button').click();
     await page.evaluate(()=>navigator.serviceWorker.ready);
     await page.waitForFunction(()=>navigator.serviceWorker.controller);
-    assert.deepEqual(await page.evaluate(()=>caches.keys()),['wapp-v4']);
+    assert.deepEqual(await page.evaluate(()=>caches.keys()),['wapp-v5']);
     if(engine===chromium) {
       await context.setOffline(true);await page.reload();await page.waitForFunction(()=>document.querySelector('#move-count').textContent!=='—');assert.deepEqual(await state(page),initial);await context.setOffline(false);
     }

@@ -1,4 +1,4 @@
-const CACHE_NAME = "wapp-v4";
+const CACHE_NAME = "wapp-v5";
 const APP_FILES = [
   "./",
   "./index.html",

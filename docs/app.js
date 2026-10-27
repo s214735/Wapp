@@ -16,6 +16,9 @@ let audioContext = null;
 let wakeLock = null;
 let wakeLockPending = false;
 let activeView = "stretch";
+// A slow first fetch must not allow actions against data that is still loading.
+const startupControls = [...document.querySelectorAll("button,input,select")].filter((field) => !field.disabled);
+for (const field of startupControls) field.disabled = true;
 
 function notify(message) {
   const toast = $("toast");
@@ -433,6 +436,7 @@ async function load() {
     $("counter-data-error").hidden = false;
     notify("Saved Counter data was kept, but could not be read.");
   }
+  for (const field of startupControls) field.disabled = false;
   renderStretch();
   renderStretchSettings();
   renderCounter();

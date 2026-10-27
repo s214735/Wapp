@@ -34,7 +34,7 @@ There is no automatic sync: a desktop backup contains desktop data only. To tran
 
 ## Publishing
 
-GitHub repository **Settings → Pages → Build and deployment**: **Deploy from a branch**, branch `main`, folder `/docs`. Commit and push changes to `main` to publish. Service worker cache `wapp-v4` includes the new Counter and data modules. Cache updates remove only obsolete app-file caches, never local storage. Keep the same site address and do not clear website data. Reopen Wapp online to receive updates.
+GitHub repository **Settings → Pages → Build and deployment**: **Deploy from a branch**, branch `main`, folder `/docs`. Commit and push changes to `main` to publish. Service worker cache `wapp-v5` includes the new Counter and data modules. Cache updates remove only obsolete app-file caches, never local storage. Keep the same site address and do not clear website data. Reopen Wapp online to receive updates.
 
 ## Checks
 
