@@ -1,12 +1,12 @@
 import { buildTimeline, formatTime, normalizeRoutine, totalSeconds } from "./core.mjs";
-import { DEFAULT_CANDY, calculateCandy, dayNumber, normalizeCandy, todayISO } from "./candy.mjs";
+import { DEFAULT_COUNTER, calculateCounter, dayNumber, normalizeCounter, todayISO } from "./counter.mjs";
+import { COUNTER_KEY, loadCounter, normalizeBackup } from "./data.mjs";
 
 const ROUTINE_KEY = "wapp.routine.v1";
-const CANDY_KEY = "wapp.candy.v2";
-const LEGACY_NICO_KEY = "wapp.nico.v1";
+let counterLoadError = false;
 const $ = (id) => document.getElementById(id);
 let routine;
-let candy;
+let counter;
 let editingIndex = null;
 let editingOopsId = null;
 let session = null;
@@ -28,13 +28,13 @@ function notify(message) {
 function showView(view) {
   if (session) return;
   activeView = view;
-  for (const name of ["stretch", "candy", "settings"]) $(name + "-view").hidden = name !== view;
+  for (const name of ["stretch", "counter", "settings"]) $(name + "-view").hidden = name !== view;
   for (const button of document.querySelectorAll(".nav-button")) {
     const selected = button.dataset.view === view;
     button.classList.toggle("active", selected);
     if (selected) button.setAttribute("aria-current", "page"); else button.removeAttribute("aria-current");
   }
-  if (view === "candy") renderCandy();
+  if (view === "counter") renderCounter();
   if (view === "settings") showSettingsPage("home");
   window.scrollTo(0, 0);
 }
@@ -42,7 +42,7 @@ function showView(view) {
 function showSettingsPage(page) {
   $("settings-home").hidden = page !== "home";
   $("settings-back").hidden = page === "home";
-  for (const name of ["stretch", "candy", "backup"]) $(name + "-settings").hidden = name !== page;
+  for (const name of ["stretch", "counter", "backup"]) $(name + "-settings").hidden = name !== page;
   window.scrollTo(0, 0);
 }
 
@@ -57,10 +57,11 @@ function saveRoutine() {
   renderStretchSettings();
 }
 
-function saveCandy() {
-  localStorage.setItem(CANDY_KEY, JSON.stringify(candy));
-  renderCandy();
-  renderCandySettings();
+function saveCounter() {
+  if (counterLoadError) throw new Error("Saved Counter data could not be read. Import a valid backup to recover it.");
+  localStorage.setItem(COUNTER_KEY, JSON.stringify(counter));
+  renderCounter();
+  renderCounterSettings();
 }
 
 function describe(exercise) {
@@ -137,15 +138,11 @@ function openEditor(index = null) {
 }
 
 function formatMoney(value) {
-  return `${new Intl.NumberFormat(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value)} ${candy.currency}`;
+  return `${new Intl.NumberFormat(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value)} DKK`;
 }
 
 function formatCount(value) {
   return new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(value);
-}
-
-function servingWord(value) {
-  return value > 1 ? "servings" : "serving";
 }
 
 function formatDate(value) {
@@ -156,25 +153,25 @@ function formatDate(value) {
 function renderOopsList(id, editable) {
   const list = $(id);
   list.replaceChildren();
-  if (!candy.oops.length) {
+  if (!counter.oops.length) {
     const empty = document.createElement("li");
     empty.className = "empty-list";
     empty.textContent = "No oops entries yet.";
     list.append(empty);
     return;
   }
-  const sorted = [...candy.oops].sort((a, b) => b.date.localeCompare(a.date));
+  const sorted = [...counter.oops].sort((a, b) => b.date.localeCompare(a.date));
   for (const entry of sorted) {
     const row = document.createElement("li");
     const details = document.createElement("div");
     const title = document.createElement("strong");
-    title.textContent = entry.note || "Oops";
+    title.textContent = entry.reason || "Oops";
     const date = document.createElement("small");
     date.textContent = formatDate(entry.date);
     details.append(title, date);
     const amount = document.createElement("span");
     amount.className = "history-amount";
-    amount.textContent = `−${formatCount(entry.servings)} ${servingWord(entry.servings)}`;
+    amount.textContent = `−${formatMoney(entry.amount)}`;
     row.append(details, amount);
     if (editable) {
       const edit = document.createElement("button");
@@ -188,43 +185,42 @@ function renderOopsList(id, editable) {
   }
 }
 
-function renderCandy() {
-  const result = calculateCandy(candy);
+function renderCounter() {
+  const result = calculateCounter(counter);
   const today = todayISO();
-  $("candy-setup-hint").hidden = result.configured;
-  $("candy-saved").textContent = result.configured ? formatMoney(result.saved) : "—";
-  $("candy-days").textContent = result.configured ? formatCount(result.days) : "—";
-  $("candy-servings").textContent = result.configured ? formatCount(result.netServings) : "—";
-  $("candy-since").textContent = result.configured ? `Less sugar since ${formatDate(candy.startDate)}` : "Set a start date in Settings to begin.";
-  $("candy-breakdown").textContent = result.configured
-    ? `${formatCount(result.grossServings)} estimated sugary ${servingWord(result.grossServings)} × ${formatMoney(candy.servingPrice)} − ${formatCount(result.oopsServings)} logged ${servingWord(result.oopsServings)} × ${formatMoney(candy.servingPrice)}`
+  $("counter-setup-hint").hidden = result.configured;
+  $("counter-saved").textContent = result.configured ? formatMoney(result.saved) : "—";
+  $("counter-days").textContent = result.configured ? formatCount(result.days) : "—";
+  $("counter-since").textContent = result.configured ? `Since ${formatDate(counter.startDate)}` : "Set a start date in Settings to begin.";
+  $("counter-breakdown").textContent = result.configured
+    ? `${formatMoney(result.gross)} estimated − ${formatMoney(result.deductions)} oops (${formatMoney(counter.amountPerPeriod)} every ${formatCount(counter.periodDays)} days)`
     : "Enter your estimate to see savings.";
   $("oops-date").max = today;
-  $("oops-date").min = candy.startDate || "";
+  $("oops-date").min = counter.startDate || "";
   if (!$("oops-date").value || $("oops-date").value > today) $("oops-date").value = today;
-  for (const field of $("oops-form").querySelectorAll("input,button")) field.disabled = !result.configured;
-  renderOopsList("candy-oops-list", false);
+  for (const field of $("oops-form").querySelectorAll("input,button")) field.disabled = !result.configured || counterLoadError;
+  renderOopsList("counter-oops-list", false);
 }
 
-function renderCandySettings() {
-  $("candy-start-date").value = candy.startDate;
-  $("candy-start-date").max = todayISO();
-  $("candy-price").value = candy.servingPrice;
-  $("candy-rate").value = candy.servingsPerPeriod;
-  $("candy-period").value = candy.periodDays;
-  $("candy-currency").value = candy.currency;
+function renderCounterSettings() {
+  for (const field of $("counter-settings-form").querySelectorAll("input,button")) field.disabled = counterLoadError;
+  $("counter-start-date").value = counter.startDate;
+  $("counter-start-date").max = todayISO();
+  $("counter-rate").value = counter.amountPerPeriod;
+  $("counter-period").value = counter.periodDays;
   renderOopsList("settings-oops-list", true);
 }
 
 function openOopsEditor(id) {
-  const entry = candy.oops.find((item) => item.id === id);
+  const entry = counter.oops.find((item) => item.id === id);
   if (!entry) return;
   editingOopsId = id;
   $("edit-oops-date").value = entry.date;
-  $("edit-oops-date").min = candy.startDate;
-  $("edit-oops-date").max = todayISO();
-  $("edit-oops-servings").value = entry.servings;
-  $("edit-oops-note").value = entry.note;
+  // Keep older entries editable even if the start date has moved.
+  $("edit-oops-date").min = "";
+  $("edit-oops-date").max = entry.date > todayISO() ? entry.date : todayISO();
+  $("edit-oops-amount").value = entry.amount;
+  $("edit-oops-reason").value = entry.reason;
   $("oops-dialog").showModal();
 }
 
@@ -367,7 +363,8 @@ function renderSession(reason = "") {
 }
 
 function makeBackup() {
-  return { version: 3, exportedAt: new Date().toISOString(), routine, candy };
+  if (counterLoadError) throw new Error("Saved Counter data could not be read. Recover it before exporting.");
+  return { version: 4, exportedAt: new Date().toISOString(), routine, counter };
 }
 
 function downloadBackup() {
@@ -400,13 +397,14 @@ async function shareBackup() {
 
 async function importBackup(file) {
   const input = JSON.parse(await file.text());
-  const nextRoutine = normalizeRoutine(input?.routine || input);
-  const nextCandy = input?.routine ? normalizeCandy(input.candy || input.nico || DEFAULT_CANDY) : candy;
+  const { routine: nextRoutine, counter: nextCounter } = normalizeBackup(input, counterLoadError ? null : counter);
   if (!window.confirm("Replace this device's Wapp data with the selected backup?")) return;
   routine = nextRoutine;
-  candy = nextCandy;
+  counter = nextCounter;
+  counterLoadError = false;
+  $("counter-data-error").hidden = true;
   saveRoutine();
-  saveCandy();
+  saveCounter();
   notify("Backup imported");
 }
 
@@ -425,30 +423,26 @@ async function load() {
   }
   try { routine = normalizeRoutine(initial); }
   catch {
-    localStorage.removeItem(ROUTINE_KEY);
     routine = normalizeRoutine(await (await fetch("./routine.json")).json());
     notify("Saved routine was invalid; starter routine restored.");
   }
-  try {
-    const savedCandy = localStorage.getItem(CANDY_KEY);
-    candy = normalizeCandy(JSON.parse(savedCandy || localStorage.getItem(LEGACY_NICO_KEY)) || DEFAULT_CANDY);
-    if (!savedCandy && localStorage.getItem(LEGACY_NICO_KEY)) localStorage.setItem(CANDY_KEY, JSON.stringify(candy));
-  }
+  try { counter = loadCounter(localStorage); }
   catch {
-    localStorage.removeItem(CANDY_KEY);
-    candy = normalizeCandy(DEFAULT_CANDY);
-    notify("Saved CandyCounter data was invalid; defaults restored.");
+    counterLoadError = true;
+    counter = normalizeCounter(DEFAULT_COUNTER);
+    $("counter-data-error").hidden = false;
+    notify("Saved Counter data was kept, but could not be read.");
   }
   renderStretch();
   renderStretchSettings();
-  renderCandy();
-  renderCandySettings();
+  renderCounter();
+  renderCounterSettings();
 }
 
 for (const button of document.querySelectorAll(".nav-button")) button.addEventListener("click", () => showView(button.dataset.view));
-for (const name of ["stretch", "candy", "backup"]) $("settings-open-" + name).addEventListener("click", () => openSettingsPage(name));
+for (const name of ["stretch", "counter", "backup"]) $("settings-open-" + name).addEventListener("click", () => openSettingsPage(name));
 $("settings-back").addEventListener("click", () => showSettingsPage("home"));
-$("open-candy-settings").addEventListener("click", () => openSettingsPage("candy"));
+$("open-counter-settings").addEventListener("click", () => openSettingsPage("counter"));
 $("start-button").addEventListener("click", startSession);
 $("end-button").addEventListener("click", endSession);
 $("pause-button").addEventListener("click", () => {
@@ -457,8 +451,8 @@ $("pause-button").addEventListener("click", () => {
 });
 $("next-button").addEventListener("click", () => { if (session.index < session.steps.length) selectStep(session.index + 1, session.running); });
 $("previous-button").addEventListener("click", () => { if (session.index > 0) selectStep(session.index - 1, session.running); });
-document.addEventListener("visibilitychange", () => { if (document.hidden) pauseSession("Paused while Wapp was away"); else if (candy) renderCandy(); });
-window.addEventListener("pageshow", () => { if (candy) renderCandy(); });
+document.addEventListener("visibilitychange", () => { if (document.hidden) pauseSession("Paused while Wapp was away"); else if (counter) renderCounter(); });
+window.addEventListener("pageshow", () => { if (counter) renderCounter(); });
 
 $("add-button").addEventListener("click", () => openEditor());
 $("close-dialog").addEventListener("click", () => $("exercise-dialog").close());
@@ -484,25 +478,25 @@ for (const [id, key] of [["side-switch", "sideSwitchSeconds"], ["between-exercis
   $(id).addEventListener("change", (event) => { routine = normalizeRoutine({ ...routine, settings: { ...routine.settings, [key]: event.target.value } }); saveRoutine(); });
 }
 
-$("candy-settings-form").addEventListener("submit", (event) => {
+$("counter-settings-form").addEventListener("submit", (event) => {
   event.preventDefault();
   if (!event.currentTarget.reportValidity()) return;
   try {
-    candy = normalizeCandy({ ...candy, startDate: $("candy-start-date").value, servingPrice: $("candy-price").value, servingsPerPeriod: $("candy-rate").value, periodDays: $("candy-period").value, currency: $("candy-currency").value });
-    saveCandy();
-    notify("CandyCounter estimate saved");
+    counter = normalizeCounter({ ...counter, startDate: $("counter-start-date").value, amountPerPeriod: $("counter-rate").value, periodDays: $("counter-period").value });
+    saveCounter();
+    notify("Counter estimate saved");
   } catch (error) { notify(error.message); }
 });
 $("oops-form").addEventListener("submit", (event) => {
   event.preventDefault();
   if (!event.currentTarget.reportValidity()) return;
   const date = $("oops-date").value;
-  if (dayNumber(date) < dayNumber(candy.startDate) || dayNumber(date) > dayNumber(todayISO())) return notify("Oops date must be within your count.");
+  if (dayNumber(date) < dayNumber(counter.startDate) || dayNumber(date) > dayNumber(todayISO())) return notify("Oops date must be within your count.");
   try {
-    candy = normalizeCandy({ ...candy, oops: [...candy.oops, { id: crypto.randomUUID(), date, servings: $("oops-servings").value, note: $("oops-note").value }] });
-    saveCandy();
-    $("oops-servings").value = 1;
-    $("oops-note").value = "";
+    counter = normalizeCounter({ ...counter, oops: [...counter.oops, { id: crypto.randomUUID(), date, amount: $("oops-amount").value, reason: $("oops-reason").value }] });
+    saveCounter();
+    $("oops-amount").value = "";
+    $("oops-reason").value = "";
     $("oops-date").value = todayISO();
     notify("Oops registered");
   } catch (error) { notify(error.message); }
@@ -512,24 +506,26 @@ $("oops-edit-form").addEventListener("submit", (event) => {
   event.preventDefault();
   if (!event.currentTarget.reportValidity()) return;
   const date = $("edit-oops-date").value;
-  if (dayNumber(date) < dayNumber(candy.startDate) || dayNumber(date) > dayNumber(todayISO())) return notify("Oops date must be within your count.");
+  if (dayNumber(date) === null) return notify("Enter a valid date.");
   try {
-    candy = normalizeCandy({ ...candy, oops: candy.oops.map((entry) => entry.id === editingOopsId ? { ...entry, date, servings: $("edit-oops-servings").value, note: $("edit-oops-note").value } : entry) });
-    saveCandy();
+    counter = normalizeCounter({ ...counter, oops: counter.oops.map((entry) => entry.id === editingOopsId ? { ...entry, date, amount: $("edit-oops-amount").value, reason: $("edit-oops-reason").value } : entry) });
+    saveCounter();
     $("oops-dialog").close();
     notify("Oops updated");
   } catch (error) { notify(error.message); }
 });
 $("delete-oops-button").addEventListener("click", () => {
   if (!window.confirm("Delete this oops entry?")) return;
-  candy.oops = candy.oops.filter((entry) => entry.id !== editingOopsId);
-  saveCandy();
+  counter.oops = counter.oops.filter((entry) => entry.id !== editingOopsId);
+  saveCounter();
   $("oops-dialog").close();
   notify("Oops removed");
 });
 
-$("export-button").addEventListener("click", downloadBackup);
-$("share-button").addEventListener("click", shareBackup);
+$("export-button").addEventListener("click", () => {
+  try { downloadBackup(); } catch (error) { notify(error.message); }
+});
+$("share-button").addEventListener("click", () => shareBackup().catch((error) => notify(error.message)));
 $("import-button").addEventListener("click", () => $("import-file").click());
 $("import-file").addEventListener("change", async (event) => {
   const file = event.target.files?.[0];

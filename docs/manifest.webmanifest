@@ -1,7 +1,7 @@
 {
   "name": "Wapp",
   "short_name": "Wapp",
-  "description": "A personal stretch timer and CandyCounter",
+  "description": "A personal stretch timer and Counter",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
