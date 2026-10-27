@@ -108,7 +108,7 @@ async function run(engine, width) {
     await page.locator('[data-view=stretch]').click();await page.locator('#start-button').click();assert.equal(await page.locator('#session').isVisible(),true);await page.locator('#pause-button').click();assert.equal(await page.locator('#pause-button').textContent(),'Resume');await page.locator('#end-button').click();
     await page.evaluate(()=>navigator.serviceWorker.ready);
     await page.waitForFunction(()=>navigator.serviceWorker.controller);
-    assert.deepEqual(await page.evaluate(()=>caches.keys()),['wapp-v5']);
+    assert.deepEqual(await page.evaluate(()=>caches.keys()),['wapp-v6']);
     if(engine===chromium) {
       await context.setOffline(true);await page.reload();await page.waitForFunction(()=>document.querySelector('#move-count').textContent!=='—');assert.deepEqual(await state(page),initial);await context.setOffline(false);
     }

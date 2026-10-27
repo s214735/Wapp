@@ -1,4 +1,4 @@
-const CACHE_NAME = "wapp-v5";
+const CACHE_NAME = "wapp-v6";
 const APP_FILES = [
   "./",
   "./index.html",
@@ -6,6 +6,11 @@ const APP_FILES = [
   "./core.mjs",
   "./counter.mjs",
   "./data.mjs",
+  "./sheets.mjs",
+  "./sheets-ui.mjs",
+  "./sheets-setup.html",
+  "./privacy.html",
+  "./vendor/chart.umd.min.js",
   "./styles.css",
   "./routine.json",
   "./manifest.webmanifest",

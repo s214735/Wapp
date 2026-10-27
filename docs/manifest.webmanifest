@@ -1,7 +1,7 @@
 {
   "name": "Wapp",
   "short_name": "Wapp",
-  "description": "A personal stretch timer and Counter",
+  "description": "A personal stretch timer, Counter and private spreadsheet graphs",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

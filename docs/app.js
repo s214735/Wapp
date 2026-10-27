@@ -1,3 +1,4 @@
+import { createSheetsPage } from "./sheets-ui.mjs";
 import { buildTimeline, formatTime, normalizeRoutine, totalSeconds } from "./core.mjs";
 import { DEFAULT_COUNTER, calculateCounter, dayNumber, normalizeCounter, todayISO } from "./counter.mjs";
 import { COUNTER_KEY, loadCounter, normalizeBackup } from "./data.mjs";
@@ -5,6 +6,7 @@ import { COUNTER_KEY, loadCounter, normalizeBackup } from "./data.mjs";
 const ROUTINE_KEY = "wapp.routine.v1";
 let counterLoadError = false;
 const $ = (id) => document.getElementById(id);
+let sheetsPage;
 let routine;
 let counter;
 let editingIndex = null;
@@ -31,13 +33,14 @@ function notify(message) {
 function showView(view) {
   if (session) return;
   activeView = view;
-  for (const name of ["stretch", "counter", "settings"]) $(name + "-view").hidden = name !== view;
+  for (const name of ["stretch", "counter", "data", "settings"]) $(name + "-view").hidden = name !== view;
   for (const button of document.querySelectorAll(".nav-button")) {
     const selected = button.dataset.view === view;
     button.classList.toggle("active", selected);
     if (selected) button.setAttribute("aria-current", "page"); else button.removeAttribute("aria-current");
   }
   if (view === "counter") renderCounter();
+  if (view === "data") sheetsPage?.show();
   if (view === "settings") showSettingsPage("home");
   window.scrollTo(0, 0);
 }
@@ -45,7 +48,8 @@ function showView(view) {
 function showSettingsPage(page) {
   $("settings-home").hidden = page !== "home";
   $("settings-back").hidden = page === "home";
-  for (const name of ["stretch", "counter", "backup"]) $(name + "-settings").hidden = name !== page;
+  if (page === "data") sheetsPage?.renderSettings();
+  for (const name of ["stretch", "counter", "data", "backup"]) $(name + "-settings").hidden = name !== page;
   window.scrollTo(0, 0);
 }
 
@@ -441,10 +445,11 @@ async function load() {
   renderStretchSettings();
   renderCounter();
   renderCounterSettings();
+  sheetsPage = createSheetsPage({ notify, openSettings: () => openSettingsPage("data") });
 }
 
 for (const button of document.querySelectorAll(".nav-button")) button.addEventListener("click", () => showView(button.dataset.view));
-for (const name of ["stretch", "counter", "backup"]) $("settings-open-" + name).addEventListener("click", () => openSettingsPage(name));
+for (const name of ["stretch", "counter", "data", "backup"]) $("settings-open-" + name).addEventListener("click", () => openSettingsPage(name));
 $("settings-back").addEventListener("click", () => showSettingsPage("home"));
 $("open-counter-settings").addEventListener("click", () => openSettingsPage("counter"));
 $("start-button").addEventListener("click", startSession);
